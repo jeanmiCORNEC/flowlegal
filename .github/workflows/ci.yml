@@ -71,6 +71,20 @@ jobs:
             sleep 2
           done
 
+      # ---------- FRONT BUILD pour générer public/build/manifest.json ----------
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Build assets (Vite)
+        run: npm run build
+      # ------------------------------------------------------------------------
+
       - name: Run migrations
         run: php artisan migrate --force
 
