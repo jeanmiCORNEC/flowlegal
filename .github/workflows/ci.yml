@@ -76,7 +76,7 @@ jobs:
             sleep 2
           done
 
-      # ---------- FRONT build (Vite) pour @vite manifest ----------
+      # ---------- FRONT build (Vite) ----------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -88,12 +88,12 @@ jobs:
 
       - name: Build assets (Vite)
         run: npm run build
-      # ------------------------------------------------------------
+      # ----------------------------------------
 
       - name: Run migrations
         run: php artisan migrate --force
 
-      # Tests + couverture : HTML + Clover (XML)
+      # Tests + couverture
       - name: Run tests (parallel) with coverage
         run: |
           mkdir -p coverage/html coverage
@@ -101,30 +101,34 @@ jobs:
             --coverage-html coverage/html \
             --coverage-clover coverage/clover.xml
 
-      # Génère la doc Scribe
       - name: Generate docs (Scribe)
         run: php artisan scribe:generate
 
-      # Parse clover.xml pour produire un badge JSON (Shields)
+      # ---------- Génère le badge JSON ----------
       - name: Build coverage badge JSON
         run: |
           python3 - <<'PY'
-        import xml.etree.ElementTree as ET, json, os
-        tree = ET.parse('coverage/clover.xml')
-        root = tree.getroot()
-        metrics = root.find('.//metrics')
-        covered = int(metrics.get('coveredstatements', 0))
-        total = int(metrics.get('statements', 0))
-        pct = 0 if total == 0 else round(covered*100/total, 1)
-        color = 'red' if pct < 50 else ('orange' if pct < 70 else ('yellow' if pct < 80 else ('yellowgreen' if pct < 90 else 'brightgreen')))
-        os.makedirs('pages/coverage', exist_ok=True)
-        with open('pages/coverage/coverage-badge.json','w') as f:
-            json.dump({"schemaVersion":1,"label":"coverage","message":f"{pct}%","color":color}, f)
-        PY
+import xml.etree.ElementTree as ET, json, os
+tree = ET.parse('coverage/clover.xml')
+root = tree.getroot()
+metrics = root.find('.//metrics')
+covered = int(metrics.get('coveredstatements', 0))
+total = int(metrics.get('statements', 0))
+pct = 0 if total == 0 else round(covered * 100 / total, 1)
+color = (
+    'red' if pct < 50 else
+    'orange' if pct < 70 else
+    'yellow' if pct < 80 else
+    'yellowgreen' if pct < 90 else
+    'brightgreen'
+)
+os.makedirs('pages/coverage', exist_ok=True)
+with open('pages/coverage/coverage-badge.json', 'w') as f:
+    json.dump({"schemaVersion": 1, "label": "coverage", "message": f"{pct}%", "color": color}, f)
+PY
+      # ------------------------------------------
 
-      # Prépare l'artefact GitHub Pages : on publie à la racine
-      # /docs   -> Scribe
-      # /coverage -> HTML coverage + badge JSON
+      # Prépare les fichiers à publier
       - name: Prepare Pages artifact
         run: |
           mkdir -p pages/docs
@@ -132,7 +136,6 @@ jobs:
           mkdir -p pages/coverage/html
           cp -r coverage/html/* pages/coverage/html/ || true
 
-      # Upload artefact vers Pages
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
