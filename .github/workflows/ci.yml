@@ -21,7 +21,7 @@ jobs:
           --health-cmd="mysqladmin ping -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - uses: actions/checkout@v4
@@ -33,27 +33,45 @@ jobs:
           extensions: mbstring, intl, pdo_mysql
           coverage: none
 
-      - name: Copy .env
+      - name: Install MySQL client
         run: |
-          cp .env.example .env
-          php -r "file_put_contents('.env', preg_replace('/DB_DATABASE=.*/','DB_DATABASE=flowlegal_test', file_get_contents('.env')));"
-          php artisan key:generate
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      # (Optionnel mais accélère beaucoup)
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
 
       - name: Install Composer deps
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare .env (MySQL for CI)
+        run: |
+          cp .env.example .env
+          php -r "file_put_contents('.env', preg_replace('/^DB_HOST=.*/m','DB_HOST=127.0.0.1', file_get_contents('.env')));"
+          php -r "file_put_contents('.env', preg_replace('/^DB_PORT=.*/m','DB_PORT=3306', file_get_contents('.env')));"
+          php -r "file_put_contents('.env', preg_replace('/^DB_DATABASE=.*/m','DB_DATABASE=flowlegal_test', file_get_contents('.env')));"
+          php -r "file_put_contents('.env', preg_replace('/^DB_USERNAME=.*/m','DB_USERNAME=root', file_get_contents('.env')));"
+          php -r "file_put_contents('.env', preg_replace('/^DB_PASSWORD=.*/m','DB_PASSWORD=root', file_get_contents('.env')));"
+          php artisan key:generate
 
       - name: Wait for MySQL
         run: |
-          for i in {1..20}; do
-            mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "SELECT 1" && break
+          for i in {1..40}; do
+            mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "SELECT 1" && echo 'MySQL is up' && break
+            echo "MySQL not ready yet... ($i)"
             sleep 2
           done
 
-      - name: Migrate
+      - name: Run migrations
         run: php artisan migrate --force
 
       - name: Run tests
         run: php artisan test --parallel
 
-      - name: Generate docs
+      - name: Generate docs (Scribe)
         run: php artisan scribe:generate
