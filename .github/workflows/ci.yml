@@ -145,19 +145,18 @@ jobs:
           path: pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
-
+        
   deploy-pages:
-  needs: build-test
-  runs-on: ubuntu-latest
-  permissions:
-    pages: write
-    id-token: write
-    contents: read
-  environment:
-    name: github-pages
-    url: ${{ steps.deployment.outputs.page_url }}
-  steps:
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
