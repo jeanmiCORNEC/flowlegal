@@ -96,7 +96,8 @@ jobs:
       # Tests + couverture : HTML + Clover (XML)
       - name: Run tests (parallel) with coverage
         run: |
-          mkdir -p coverage/html coverage
+          mkdir -p coverage/html
+          mkdir -p coverage
           php artisan test --parallel --processes=4 -- \
             --coverage-html coverage/html \
             --coverage-clover coverage/clover.xml
