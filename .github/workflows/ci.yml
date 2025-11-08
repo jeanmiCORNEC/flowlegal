@@ -94,11 +94,14 @@ jobs:
         run: php artisan migrate --force
 
       # Tests + couverture : HTML + Clover (XML)
-      - name: Run tests (parallel) with coverage
+      - name: Run tests (fast, parallel)
+        run: php artisan test --parallel --processes=4
+
+      - name: Run coverage (serial)
         run: |
           mkdir -p coverage/html
           mkdir -p coverage
-          php artisan test --parallel --processes=4 -- \
+          php artisan test -- \
             --coverage-html coverage/html \
             --coverage-clover coverage/clover.xml
 
