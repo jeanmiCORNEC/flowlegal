@@ -107,7 +107,7 @@ jobs:
       # ---------- Génère le badge JSON ----------
       - name: Build coverage badge JSON
         run: |
-          python3 - <<'PY'
+          python3 -<<'PY'
 import xml.etree.ElementTree as ET, json, os
 tree = ET.parse('coverage/clover.xml')
 root = tree.getroot()
