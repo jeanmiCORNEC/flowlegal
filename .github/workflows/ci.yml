@@ -98,12 +98,14 @@ jobs:
         run: php artisan test --parallel --processes=4
 
       - name: Run coverage (serial)
+        env:
+          XDEBUG_MODE: coverage
         run: |
+          php -v
+          php -m | grep -i xdebug || true
           mkdir -p coverage/html
           mkdir -p coverage
-          php artisan test -- \
-            --coverage-html coverage/html \
-            --coverage-clover coverage/clover.xml
+          vendor/bin/phpunit --coverage-html coverage/html --coverage-clover coverage/clover.xml
 
       # Génère la doc Scribe
       - name: Generate docs (Scribe)
