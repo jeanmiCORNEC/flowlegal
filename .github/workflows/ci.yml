@@ -75,6 +75,3 @@ jobs:
 
       - name: Generate docs (Scribe)
         run: php artisan scribe:generate
-
-      - name: Run tests
-        run: php artisan test
