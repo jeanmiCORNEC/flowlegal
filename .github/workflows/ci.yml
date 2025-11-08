@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: flowlegal_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_mysql
+          coverage: none
+
+      - name: Copy .env
+        run: |
+          cp .env.example .env
+          php -r "file_put_contents('.env', preg_replace('/DB_DATABASE=.*/','DB_DATABASE=flowlegal_test', file_get_contents('.env')));"
+          php artisan key:generate
+
+      - name: Install Composer deps
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..20}; do
+            mysql -h 127.0.0.1 -P 3306 -uroot -proot -e "SELECT 1" && break
+            sleep 2
+          done
+
+      - name: Migrate
+        run: php artisan migrate --force
+
+      - name: Run tests
+        run: php artisan test --parallel
+
+      - name: Generate docs
+        run: php artisan scribe:generate
